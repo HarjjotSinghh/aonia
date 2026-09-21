@@ -4,3 +4,8 @@ export type { Roots } from "./paths.js";
 export type { IndexEntry, ProfileIndex } from "./index-file.js";
 export { ProfileStore, exists } from "./profiles.js";
 export type { CreateOptions, Profile } from "./profiles.js";
+export { envFor } from "./env.js";
+export { identityOf } from "./identity.js";
+export type { Identity } from "./identity.js";
+export { findMuse, museCommand, parseLoginOutput } from "./muse.js";
+export type { Command, LoginPrompt } from "./muse.js";
