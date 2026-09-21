@@ -13,15 +13,15 @@ It is a sibling to [Helicon](https://github.com/HarjjotSinghh/helicon), which wi
 
 Muse Code has one login per machine. `muse login` writes to `~/.config/muse/auth.json`, and every
 `muse` process on that machine uses it — there is no `--account` and no profile flag. So work and
-personal, or a client credential and your own, or a Standard-tier account and a Contributor one,
-all mean logging out and back in, with a browser round trip each time.
+personal, or a client credential and your own, or two subscriptions, all mean logging out and back
+in, with a browser round trip each time.
 
 `aonia` gives each account its own config and data root, and starts `muse` pointed at one of them:
 
 ```bash
 aonia add work              # create a profile
 aonia login work            # runs `muse login` inside it — Muse's own browser flow, unchanged
-aonia list                  # names, emails, tiers, last used
+aonia list                  # names, emails, login state, last used
 aonia run work              # `muse`, under that profile
 aonia run work -- serve     # anything `muse` takes, under that profile
 aonia bind ~/code/client work
@@ -34,7 +34,7 @@ Two profiles can run at once, in the same repository, on different subscriptions
 ## What it does not do
 
 **It never touches a credential.** No reading, writing, copying, exporting or transmitting. `muse login`
-owns every login; `aonia` owns directories and three environment variables. It never modifies
+owns every login; `aonia` owns directories and two environment variables. It never modifies
 `~/.config/muse` or `~/.local/share/muse`, so your existing login keeps working whether or not this is
 installed, and removing it leaves no trace in Muse's own state.
 
@@ -47,13 +47,15 @@ warns when one is inherited from your environment. It never sets one.
 
 ## How it works
 
-Each profile is a pair of directories, and selecting one is three environment variables:
+Each profile is a pair of directories, and selecting one is two environment variables:
 
 ```
 ~/.aonia/profiles/work/config   →  XDG_CONFIG_HOME   (auth.json, settings.json, trust.json)
 ~/.aonia/profiles/work/data     →  XDG_DATA_HOME     (sessions, skills, session-index.db)
-                                →  MUSE_AUTH_PATH
 ```
+
+Those two are the only account-selecting inputs the `muse` binary reads. (`MUSE_AUTH_PATH` exists,
+but only the Bash launcher looks at it, for its own update downloads; the binary ignores it.)
 
 That is the whole mechanism. Everything else is bookkeeping: which profiles exist, which one a
 directory is bound to, and what identity each one holds — read from the non-secret fields of
@@ -61,9 +63,12 @@ directory is bound to, and what identity each one holds — read from the non-se
 
 On Linux and Windows the token lives in the profile's own `auth.json`, so isolating the config root
 isolates the credential. On macOS, Muse 1.3.0 keeps it in the login Keychain under a fixed item
-(`ai.meta.dev.credentials` / `meta`) that is not derived from the config directory. Whether two
-profiles can coexist there is the first thing to find out, and the answer will be stated plainly here
-rather than left for people to discover.
+(`ai.meta.dev.credentials` / `meta`) that is not derived from the config directory, and every
+profile whose `auth.json` points at the Keychain shares that one item. So on macOS `aonia` sets a
+third variable, `TBH_CREDENTIAL_BACKEND=file`, which the binary honours and which keeps a profile's
+token in its own `auth.json` instead — the same place Linux and Windows already keep it. Whether a
+real login under that setting works end to end is the first thing left to confirm, and the answer
+will be stated plainly here rather than left for people to discover.
 
 ## With Helicon
 
