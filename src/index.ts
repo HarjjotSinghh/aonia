@@ -9,3 +9,4 @@ export { identityOf } from "./identity.js";
 export type { Identity } from "./identity.js";
 export { findMuse, museCommand, parseLoginOutput } from "./muse.js";
 export type { Command, LoginPrompt } from "./muse.js";
+export { Bindings, normalizeBindingPath } from "./bindings.js";
