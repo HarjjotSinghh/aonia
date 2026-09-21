@@ -12,3 +12,5 @@ export type { Command, LoginPrompt } from "./muse.js";
 export { Bindings, normalizeBindingPath } from "./bindings.js";
 export { dirSize, doctor, formatBytes } from "./doctor.js";
 export type { DoctorContext, Finding } from "./doctor.js";
+export { createAonia } from "./aonia.js";
+export type { Aonia, AoniaBindings, AoniaOptions } from "./aonia.js";
