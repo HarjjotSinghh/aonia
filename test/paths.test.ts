@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { describe, it } from "node:test";
 import { AoniaPaths, defaultMuseConfigRoot, isProfileId, museConfigDir, museDataDir } from "../src/paths.js";
 
@@ -29,8 +29,8 @@ describe("AoniaPaths", () => {
   });
 
   it("prefers an explicit home, then AONIA_HOME, then ~/.aonia", () => {
-    assert.equal(AoniaPaths.resolve("/explicit", { AONIA_HOME: "/from-env" }).home, "/explicit");
-    assert.equal(AoniaPaths.resolve(undefined, { AONIA_HOME: "/from-env" }).home, "/from-env");
+    assert.equal(AoniaPaths.resolve("/explicit", { AONIA_HOME: "/from-env" }).home, resolve("/explicit"));
+    assert.equal(AoniaPaths.resolve(undefined, { AONIA_HOME: "/from-env" }).home, resolve("/from-env"));
     assert.ok(AoniaPaths.resolve(undefined, {}).home.endsWith(".aonia"));
   });
 });
