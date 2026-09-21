@@ -4,7 +4,10 @@ import { createRequire } from "node:module";
 import { createInterface } from "node:readline/promises";
 import { createAonia, type Aonia } from "./aonia.js";
 import { AoniaError } from "./errors.js";
+import { readIndex } from "./index-file.js";
 import { findMuse } from "./muse.js";
+import { isProfileId } from "./paths.js";
+import type { Profile } from "./profiles.js";
 
 const HELP = `aonia: named profiles for the Muse Code CLI
 
@@ -21,8 +24,8 @@ usage:
   aonia rm <id> [--yes]
 
 global options:
-  --muse <path>   the muse executable (default: muse on PATH, or $AONIA_MUSE)
-  --home <dir>    where profiles live (default: $AONIA_HOME, or ~/.aonia)
+  --muse <path>   the muse executable (default: $AONIA_MUSE, else muse on PATH)
+  --home <dir>    where profiles live (default: $AONIA_HOME, else ~/.aonia)
   --version, --help
 
 A profile id is a lowercase slug (letters, digits, dashes, up to 32 characters) and is also the
@@ -88,6 +91,26 @@ async function confirm(question: string): Promise<boolean> {
   } finally {
     rl.close();
   }
+}
+
+/**
+ * When a profile's directory is gone but profiles.json still mentions it (as an entry or a
+ * binding), `aonia.getProfile` cannot find it, yet `aonia rm <id>` is exactly the advice doctor
+ * gives for this case. Drops the stale entry and any bindings without asking for confirmation,
+ * since there is no directory left to lose. Returns false when there is nothing stale to drop.
+ */
+async function removeStaleEntry(aonia: Aonia, id: string): Promise<boolean> {
+  if (!isProfileId(id)) {
+    return false;
+  }
+  const index = await readIndex(aonia.paths.indexFile);
+  const inIndex = index.profiles.some((entry) => entry.id === id) || Object.values(index.bindings).includes(id);
+  if (!inIndex) {
+    return false;
+  }
+  await aonia.removeProfile(id);
+  process.stdout.write(`Removed the stale entry for profile "${id}"; its directory was already gone.\n`);
+  return true;
 }
 
 function spawnMuse(command: { command: string; args: string[]; env: Record<string, string> }): Promise<number> {
@@ -194,7 +217,15 @@ export async function main(argv: string[]): Promise<number> {
       if (!first) {
         fail("usage: aonia rm <id> [--yes]", 2);
       }
-      const profile = await aonia.getProfile(first);
+      let profile: Profile;
+      try {
+        profile = await aonia.getProfile(first);
+      } catch (error) {
+        if (error instanceof AoniaError && error.code === "no_such_profile" && (await removeStaleEntry(aonia, first))) {
+          return 0;
+        }
+        throw error;
+      }
       if (parsed.flags.get("--yes") !== true) {
         const ok = await confirm(`Remove profile "${profile.id}" and everything under ${aonia.paths.profileDir(profile.id)}? The login inside it is lost.`);
         if (!ok) {
@@ -291,6 +322,6 @@ main(process.argv.slice(2)).then(
   (error: unknown) => {
     const message = error instanceof Error ? error.message : String(error);
     process.stderr.write(`aonia: ${message}\n`);
-    process.exitCode = error instanceof CliExit ? error.code : error instanceof AoniaError ? 1 : 1;
+    process.exitCode = error instanceof CliExit ? error.code : 1;
   },
 );

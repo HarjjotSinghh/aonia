@@ -79,6 +79,27 @@ describe("aonia CLI", () => {
     await assert.rejects(stat(join(home, "profiles", "work")));
   });
 
+  it("rm clears a stale index entry whose directory is already gone", async () => {
+    const indexFile = join(home, "profiles.json");
+    await writeFile(
+      indexFile,
+      JSON.stringify({
+        version: 1,
+        profiles: [{ id: "ghost", name: "Ghost", createdAt: "2026-01-01T00:00:00.000Z", lastUsedAt: null }],
+        bindings: { "/some/path": "ghost" },
+      }) + "\n",
+    );
+    const removed = await run(["rm", "ghost"], env);
+    assert.equal(removed.code, 0);
+    assert.ok(removed.stdout.includes("stale entry"));
+    const index = JSON.parse(await readFile(indexFile, "utf8")) as { profiles: { id: string }[]; bindings: Record<string, string> };
+    assert.equal(index.profiles.some((entry) => entry.id === "ghost"), false);
+    assert.equal(Object.keys(index.bindings).length, 0);
+    const missing = await run(["rm", "nope"], env);
+    assert.equal(missing.code, 1);
+    assert.ok(missing.stderr.includes("No profile named"));
+  });
+
   it("env prints shell exports, or JSON", async () => {
     await run(["add", "work"], env);
     const shell = await run(["env", "work"], env);
