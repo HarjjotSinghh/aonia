@@ -105,7 +105,11 @@ variable, and disassembly of the gate shows it accepts exactly the string `file`
 silently falls through to the Keychain-capable default. With `file` set, the credential provider has
 no Keychain handle, so a process started that way cannot read or write `ai.meta.dev.credentials`,
 and its token has to live inline in the profile's own `auth.json` — the layout Linux and Windows use
-already. A real login under it has not yet been run (spike S1).
+already. Proved end to end on 2026-09-21: `muse login` under a fresh root with it printed
+`Logged in. Credential saved to <root>/muse/auth.json. Model API access verified.`, wrote a 640-byte
+0600 `auth.json` (`schema_version: 1`, `access_token` inline, no `storage` key), and left the
+Keychain item's modification date unchanged. A turn under that profile then ran at the same time as
+a turn under the default login, in the same directory, both fine.
 
 **Credential backends.** The binary carries `file`, `keychain` and `keychain_fallback_file`, with
 fallback reasons `interaction_not_allowed` and `denied`, and a note that off-macOS stamps `file`.
@@ -213,29 +217,39 @@ That is spike S3.
 
 ## 8. Open questions
 
-**S1 — macOS Keychain.** Half answered on 2026-09-21: Keychain-backed profiles share one item, so
-two of them cannot hold two accounts (§3). What remains, in order:
+**S1 — macOS Keychain. Answered 2026-09-21: macOS gets concurrency.** Keychain-backed profiles
+share one item, so `envFor()` sets `TBH_CREDENTIAL_BACKEND=file` on macOS, and with that a login,
+a token file, and two concurrent turns (profile plus default login, same directory) all worked with
+the Keychain untouched (§3). What is left is confirmation with a second account: log profile B in
+the same way, run both, and check that `muse logout` inside one leaves the other alone. Nothing in
+the design waits on that any more. The README states the macOS answer on its first screen.
 
-1. With the existing account, run `muse login` in a fresh profile root with
-   `TBH_CREDENTIAL_BACKEND=file`. Expect: the Keychain item's modification date does not change, the
-   profile's `auth.json` gains an inline token, and a turn under that profile succeeds. This needs one
-   browser approval and no second account.
-2. Start a host under that profile and one under the default login at the same time; run a turn on
-   each.
-3. With a second account, repeat step 1 for profile B and confirm both profiles keep working, and
-   that `muse logout` inside one leaves the other alone.
+**S6 — what `muse login` prints without a TTY. Answered.** With stdin at `/dev/null` and stdout
+piped it prints exactly
 
-If step 1 fails, fall back to the two escapes from the first draft — deny Keychain access to force
-`keychain_fallback_file`, or set `HOME` per spawned process — and if those fail too, macOS v1 is
-sequential switching, stated on the README's first screen. **This decides what macOS can promise.**
+```
+Open this page to sign in:
+  https://auth.meta.com/oauth/device/?code=XXXX-XXXX
+confirm this code matches:
+  XXXX-XXXX
 
-**S6 — what `muse login` prints without a TTY.** Helicon's in-app "Add account" has to render
-whatever the device-code step prints (a URL and a code, or nothing, or a browser it opens itself).
-Run it under an isolated root from a piped stdout and capture both streams; cancel before approving.
+Waiting for approval…
+```
 
-**S7 — `unsafe_registry_root`.** `muse exec` under a `/tmp` data root warned
-`local session messaging disabled: unsafe_registry_root` and disabled local session messaging.
-Confirm a real `~/.aonia/profiles/<id>/data` root does not trigger it.
+then blocks polling, and on success `Logged in. Credential saved to <root>/muse/auth.json.` and
+`Model API access verified.`, exit 0. It does not open a browser itself. So `loginCommand()` is
+enough for Helicon: spawn it, parse the URL and the code from stdout, show them, wait for exit 0.
+
+**S7 — `unsafe_registry_root`. Answered.** A data root under `$HOME` (`~/.aonia-probe/s1/data`)
+raised no such warning; the `/tmp` root did because `/tmp` itself is world-writable. Profile roots
+stay under `~/.aonia`.
+
+**S8 — trust and settings start empty.** A fresh profile has no `trust.json` and a stub
+`settings.json`, so the first run in any directory is "workspace is untrusted" (agent delegation
+off until trusted), the same as a fresh Muse install. Decision: `createProfile` seeds nothing by
+default; `aonia add <id> --seed-from-default` (and the matching library option) copies
+`settings.json` and `trust.json` from the default root into the new profile. `auth.json` is never
+copied, and the default root is only read. Helicon's add-account flow passes the option.
 
 **S2 — Windows native.** Native Windows Muse keeps config in `%USERPROFILE%\.config\muse` and data in
 `%USERPROFILE%\.local\share\muse`. Does the Windows binary honour `XDG_CONFIG_HOME` and

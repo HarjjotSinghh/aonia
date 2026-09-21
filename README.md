@@ -66,9 +66,11 @@ isolates the credential. On macOS, Muse 1.3.0 keeps it in the login Keychain und
 (`ai.meta.dev.credentials` / `meta`) that is not derived from the config directory, and every
 profile whose `auth.json` points at the Keychain shares that one item. So on macOS `aonia` sets a
 third variable, `TBH_CREDENTIAL_BACKEND=file`, which the binary honours and which keeps a profile's
-token in its own `auth.json` instead — the same place Linux and Windows already keep it. Whether a
-real login under that setting works end to end is the first thing left to confirm, and the answer
-will be stated plainly here rather than left for people to discover.
+token in its own `auth.json` instead — the same place Linux and Windows already keep it. Verified on
+Muse Code 1.3.0: a login under it leaves the Keychain untouched, and a profile and the default login
+run turns at the same time in the same directory. So macOS gets the same concurrency as Linux and
+Windows, with one honest difference: on macOS a profile's token sits in a mode 0600 file under
+`~/.aonia` rather than in the Keychain.
 
 ## With Helicon
 
