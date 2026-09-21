@@ -10,3 +10,5 @@ export type { Identity } from "./identity.js";
 export { findMuse, museCommand, parseLoginOutput } from "./muse.js";
 export type { Command, LoginPrompt } from "./muse.js";
 export { Bindings, normalizeBindingPath } from "./bindings.js";
+export { dirSize, doctor, formatBytes } from "./doctor.js";
+export type { DoctorContext, Finding } from "./doctor.js";
