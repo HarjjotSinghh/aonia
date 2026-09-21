@@ -1,0 +1,15 @@
+#!/usr/bin/env node
+// Stands in for the muse CLI in tests: prints what it was given and exits how it is told.
+const keys = ["XDG_CONFIG_HOME", "XDG_DATA_HOME", "TBH_CREDENTIAL_BACKEND", "MUSE_AUTH_PATH", "META_API_KEY", "FAKE_MUSE_MARKER"];
+const env = {};
+for (const key of keys) {
+  if (process.env[key] !== undefined) {
+    env[key] = process.env[key];
+  }
+}
+if (process.argv[2] === "login") {
+  process.stdout.write("Open this page to sign in:\n  https://auth.meta.com/oauth/device/?code=TEST-CODE\nconfirm this code matches:\n  TEST-CODE\n\nWaiting for approval...\n");
+  process.stdout.write("Logged in. Credential saved to " + (process.env.XDG_CONFIG_HOME || "?") + "/muse/auth.json.\n");
+}
+process.stdout.write(JSON.stringify({ argv: process.argv.slice(2), env }) + "\n");
+process.exit(Number(process.env.FAKE_MUSE_EXIT || 0));
