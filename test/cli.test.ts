@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { readFile, stat } from "node:fs/promises";
+import { readFile, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { fixture, tempHome, writeAuthJson } from "./helpers.js";
@@ -160,5 +160,47 @@ describe("aonia CLI", () => {
     assert.equal(result.code, 0);
     assert.ok(result.stderr.includes("META_API_KEY"));
     assert.equal(result.stderr.includes("sk-live"), false);
+  });
+
+  it("add --seed-from-default copies settings.json and trust.json, never auth.json", async () => {
+    const defaultRoot = join(home, "default-xdg");
+    await writeAuthJson(defaultRoot);
+    const museDir = join(defaultRoot, "muse");
+    await writeFile(join(museDir, "settings.json"), '{"theme":"dark"}\n');
+    await writeFile(join(museDir, "trust.json"), '{"trusted":true}\n');
+    const result = await run(["add", "work", "--seed-from-default"], { ...env, XDG_CONFIG_HOME: defaultRoot });
+    assert.equal(result.code, 0);
+    const targetDir = join(home, "profiles", "work", "config", "muse");
+    assert.equal(await readFile(join(targetDir, "settings.json"), "utf8"), '{"theme":"dark"}\n');
+    assert.equal(await readFile(join(targetDir, "trust.json"), "utf8"), '{"trusted":true}\n');
+    await assert.rejects(stat(join(targetDir, "auth.json")));
+  });
+
+  it("usage errors exit 2 and print the usage line", async () => {
+    const cases = [["add"], ["rename", "work"], ["rm"], ["env"], ["bind", "/x"], ["unbind"], ["login"], ["run"]];
+    for (const args of cases) {
+      const result = await run(args, env);
+      assert.equal(result.code, 2, args.join(" "));
+      assert.ok(result.stderr.includes("usage:"), args.join(" "));
+    }
+  });
+
+  it("--home and --muse flags override the environment", async () => {
+    const altHome = join(home, "alt-home");
+    const added = await run(["add", "work", "--home", altHome], env);
+    assert.equal(added.code, 0);
+    assert.ok(await stat(join(altHome, "profiles", "work")));
+    await assert.rejects(stat(join(home, "profiles", "work")));
+    const missingMuse = join(home, "no-such-muse");
+    const doc = await run(["doctor", "--muse", missingMuse], env);
+    assert.equal(doc.code, 1);
+    assert.ok(doc.stdout.includes("muse was not found at"));
+  });
+
+  it("flags accept the --flag=value form", async () => {
+    assert.equal((await run(["add", "work", "--name=Client"], env)).code, 0);
+    const json = await run(["list", "--json"], env);
+    const parsed = JSON.parse(json.stdout) as { name: string }[];
+    assert.equal(parsed[0]?.name, "Client");
   });
 });
