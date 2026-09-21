@@ -1,0 +1,40 @@
+{
+  "name": "aonia",
+  "version": "0.1.0",
+  "description": "Named profiles for the Muse Code CLI: keep more than one login on one machine, run two of them at once, and let a project pick which one it uses.",
+  "license": "MIT",
+  "author": "Harjot Singh Rana",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HarjjotSinghh/aonia.git"
+  },
+  "homepage": "https://github.com/HarjjotSinghh/aonia#readme",
+  "bugs": "https://github.com/HarjjotSinghh/aonia/issues",
+  "keywords": ["muse", "muse-code", "profiles", "accounts", "cli", "helicon"],
+  "type": "module",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    }
+  },
+  "bin": {
+    "aonia": "./dist/src/cli.js"
+  },
+  "files": ["dist/src", "README.md", "LICENSE"],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
+    "test": "npm run build && node --test \"dist/test/*.test.js\"",
+    "prepublishOnly": "npm run clean && npm test"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.9.0"
+  }
+}
