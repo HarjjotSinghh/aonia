@@ -5,6 +5,7 @@ at the same time, and let a project choose which one it uses.
 
 > **Status: 0.1.0.** The library and CLI below work on macOS, Linux and Windows against Muse Code 1.3.0.
 > Design and the evidence behind it: [`docs/SPEC.md`](docs/SPEC.md), [`docs/CONTEXT-2026-09-21.md`](docs/CONTEXT-2026-09-21.md).
+> On npm as [`@harjjotsinghh/aonia`](https://www.npmjs.com/package/@harjjotsinghh/aonia); the command is still `aonia`.
 
 Aonia is the district around Mount Helicon, and "Aonian" was the classical epithet for the Muses.
 It is a sibling to [Helicon](https://github.com/HarjjotSinghh/helicon), which will consume this as a library.
@@ -19,7 +20,7 @@ in, with a browser round trip each time.
 `aonia` gives each account its own config and data root, and starts `muse` pointed at one of them:
 
 ```bash
-npm install -g aonia
+npm install -g @harjjotsinghh/aonia
 
 aonia add work --name "Work"        # create a profile (its id is the directory name)
 aonia login work                    # runs `muse login` inside it; Muse's own browser flow, unchanged
@@ -39,7 +40,7 @@ It never copies `auth.json`.
 From code:
 
 ```ts
-import { createAonia } from "aonia";
+import { createAonia } from "@harjjotsinghh/aonia";
 
 const aonia = createAonia();                       // or { home, musePath, platform, env }
 const work = await aonia.createProfile("work");

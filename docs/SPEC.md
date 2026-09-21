@@ -303,7 +303,7 @@ That gap, plus Helicon's existing users, is the entire reason this is worth buil
 
 ## 11. Build decisions (settled 2026-09-21)
 
-- **Package.** npm `aonia`, `"type": "module"`, built with `tsc` to `dist/`, `engines.node >=22`,
+- **Package.** npm `@harjjotsinghh/aonia` (unscoped `aonia` is blocked by npm's similar-name rule; the bin is still `aonia`), `"type": "module"`, built with `tsc` to `dist/`, `engines.node >=22`,
   `bin: { aonia: "dist/cli.js" }`, runtime dependencies: none (only `node:*`). Tests with `node:test`
   and `node:assert/strict`, run as `tsc` then `node --test dist/test/*.test.js` — the same harness
   Helicon uses, so contributors move between the repos without relearning anything.

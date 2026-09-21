@@ -1,5 +1,5 @@
 {
-  "name": "aonia",
+  "name": "@harjjotsinghh/aonia",
   "version": "0.1.0",
   "description": "Named profiles for the Muse Code CLI: keep more than one login on one machine, run two of them at once, and let a project pick which one it uses.",
   "license": "MIT",
@@ -21,11 +21,14 @@
     }
   },
   "bin": {
-    "aonia": "./dist/src/cli.js"
+    "aonia": "dist/src/cli.js"
   },
   "files": ["dist/src", "README.md", "LICENSE"],
   "engines": {
     "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
